@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "./elevator.css"; // Include your custom styles here
+import "./elevator.css"; 
 import dingSound from "./assets/sound.mp3"; // Import the ding sound
 type Elevator = {
   id: number;
@@ -55,7 +55,7 @@ const App: React.FC = () => {
           const nextFloor = elevator.currentFloor + step;
 
           if (nextFloor === target) {
-            // Play ding sound
+            // Play sound
             const audio = new Audio(dingSound);
             audio.play();
 
