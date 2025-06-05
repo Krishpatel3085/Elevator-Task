@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import "./elevator.css"; 
+import "./elevator.css";
 import dingSound from "./assets/sound.mp3"; // Import the ding sound
 type Elevator = {
   id: number;
   currentFloor: number;
   queue: number[];
+  isWaiting?: boolean;
 };
 
 const TOTAL_ELEVATORS = 5;
@@ -16,56 +17,82 @@ const App: React.FC = () => {
       id: i,
       currentFloor: 0,
       queue: [],
+      isWaiting: false,
     }))
   );
 
   const [floorButtonStatus, setFloorButtonStatus] = useState<{
     [key: number]: string;
   }>({});
-
+  
   const requestElevator = (floor: number) => {
+    if (floorButtonStatus[floor] === "Waiting...") return;
 
-    if (floorButtonStatus[floor] === "Waiting..." || floorButtonStatus[floor] === "Arrived") return;
+    const anyElevatorGoingThere = elevators.some((e) => e.queue.includes(floor));
+    const alreadyAtFloor = elevators.some((e) => e.currentFloor === floor && e.queue.length === 0);
 
-    // Set status to Waiting...
+    if (anyElevatorGoingThere || alreadyAtFloor) return;
+
     setFloorButtonStatus((prev) => ({ ...prev, [floor]: "Waiting..." }));
 
-    // Choose the nearest elevator
-    const selected = elevators.reduce((prev, curr) =>
-      Math.abs(curr.currentFloor - floor) < Math.abs(prev.currentFloor - floor) ? curr : prev
-    );
+    const idleElevators = elevators.filter((e) => e.queue.length === 0);
+    const activeElevators = elevators.filter((e) => e.queue.length > 0 && !e.queue.includes(floor));
 
-    const updated = elevators.map((e) =>
-      e.id === selected.id && !e.queue.includes(floor)
-        ? { ...e, queue: [...e.queue, floor] }
-        : e
-    );
+    let selected: Elevator;
 
-    setElevators(updated);
+    if (idleElevators.length > 0) {
+      selected = idleElevators.reduce((prev, curr) =>
+        Math.abs(curr.currentFloor - floor) < Math.abs(prev.currentFloor - floor) ? curr : prev
+      );
+    } else {
+      selected = activeElevators.reduce((prev, curr) =>
+        Math.abs(curr.currentFloor - floor) < Math.abs(prev.currentFloor - floor) ? curr : prev
+      );
+    }
+
+    setElevators((prev) =>
+      prev.map((e) =>
+        e.id === selected.id ? { ...e, queue: [...e.queue, floor] } : e
+      )
+    );
   };
+
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setElevators((prev) =>
-        prev.map((elevator) => {
-          if (elevator.queue.length === 0) return elevator;
+      setElevators((prevElevators) => {
+        return prevElevators.map((elevator) => {
+          if (elevator.queue.length === 0 || elevator.isWaiting) return elevator;
 
           const target = elevator.queue[0];
           const step = target > elevator.currentFloor ? 1 : -1;
           const nextFloor = elevator.currentFloor + step;
 
+          // Elevator arrives at target
           if (nextFloor === target) {
-            // Play sound
             const audio = new Audio(dingSound);
             audio.play();
 
-            // Show "Arrived"
+            // Set button to "Arrived"
             setFloorButtonStatus((prev) => ({
               ...prev,
               [target]: "Arrived",
             }));
 
+            // Mark elevator as waiting
             setTimeout(() => {
+              setElevators((current) =>
+                current.map((e) => {
+                  if (e.id !== elevator.id) return e;
+                  return {
+                    ...e,
+                    queue: e.queue.slice(1),
+                    isWaiting: false,
+                  };
+                })
+              );
+
+              // Reset floor button
               setFloorButtonStatus((prev) => ({
                 ...prev,
                 [target]: "Call",
@@ -74,17 +101,23 @@ const App: React.FC = () => {
 
             return {
               ...elevator,
-              currentFloor: nextFloor,
-              queue: elevator.queue.slice(1),
+              currentFloor: target,
+              isWaiting: true,
             };
           }
-          return { ...elevator, currentFloor: nextFloor };
-        })
-      );
-    }, 1000);
+
+          return {
+            ...elevator,
+            currentFloor: nextFloor,
+          };
+        });
+      });
+    }, 1000); // 1 second per floor
 
     return () => clearInterval(interval);
   }, []);
+
+
 
   return (
     <>
