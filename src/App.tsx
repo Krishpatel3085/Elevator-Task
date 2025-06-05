@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
-import "./elevator.css";
+import "./elevator.css"; 
 import dingSound from "./assets/sound.mp3"; // Import the ding sound
 type Elevator = {
   id: number;
   currentFloor: number;
   queue: number[];
-  isWaiting?: boolean;
 };
 
 const TOTAL_ELEVATORS = 5;
@@ -17,82 +16,69 @@ const App: React.FC = () => {
       id: i,
       currentFloor: 0,
       queue: [],
-      isWaiting: false,
     }))
   );
 
   const [floorButtonStatus, setFloorButtonStatus] = useState<{
     [key: number]: string;
   }>({});
-  
+
   const requestElevator = (floor: number) => {
-    if (floorButtonStatus[floor] === "Waiting...") return;
+  if (floorButtonStatus[floor] === "Waiting..." || floorButtonStatus[floor] === "Arrived") return;
 
-    const anyElevatorGoingThere = elevators.some((e) => e.queue.includes(floor));
-    const alreadyAtFloor = elevators.some((e) => e.currentFloor === floor && e.queue.length === 0);
+  setFloorButtonStatus((prev) => ({ ...prev, [floor]: "Waiting..." }));
 
-    if (anyElevatorGoingThere || alreadyAtFloor) return;
+  
+  const notAlreadyGoing = elevators.filter(e => !e.queue.includes(floor));
 
-    setFloorButtonStatus((prev) => ({ ...prev, [floor]: "Waiting..." }));
+  if (notAlreadyGoing.length === 0) return;
 
-    const idleElevators = elevators.filter((e) => e.queue.length === 0);
-    const activeElevators = elevators.filter((e) => e.queue.length > 0 && !e.queue.includes(floor));
 
-    let selected: Elevator;
+  const idleElevators = notAlreadyGoing.filter(e => e.queue.length === 0);
 
-    if (idleElevators.length > 0) {
-      selected = idleElevators.reduce((prev, curr) =>
-        Math.abs(curr.currentFloor - floor) < Math.abs(prev.currentFloor - floor) ? curr : prev
-      );
-    } else {
-      selected = activeElevators.reduce((prev, curr) =>
-        Math.abs(curr.currentFloor - floor) < Math.abs(prev.currentFloor - floor) ? curr : prev
-      );
-    }
+  let selected: Elevator;
 
-    setElevators((prev) =>
-      prev.map((e) =>
-        e.id === selected.id ? { ...e, queue: [...e.queue, floor] } : e
-      )
+  if (idleElevators.length > 0) {
+    
+    selected = idleElevators.reduce((prev, curr) =>
+      Math.abs(curr.currentFloor - floor) < Math.abs(prev.currentFloor - floor) ? curr : prev
     );
-  };
+  } else {
+    selected = notAlreadyGoing.reduce((prev, curr) =>
+      Math.abs(curr.currentFloor - floor) < Math.abs(prev.currentFloor - floor) ? curr : prev
+    );
+  }
+  
+  const updated = elevators.map((e) =>
+    e.id === selected.id ? { ...e, queue: [...e.queue, floor] } : e
+  );
+
+  setElevators(updated);
+};
 
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setElevators((prevElevators) => {
-        return prevElevators.map((elevator) => {
-          if (elevator.queue.length === 0 || elevator.isWaiting) return elevator;
+      setElevators((prev) =>
+        prev.map((elevator) => {
+          if (elevator.queue.length === 0) return elevator;
 
           const target = elevator.queue[0];
           const step = target > elevator.currentFloor ? 1 : -1;
           const nextFloor = elevator.currentFloor + step;
 
-          // Elevator arrives at target
           if (nextFloor === target) {
+            // Play sound
             const audio = new Audio(dingSound);
             audio.play();
 
-            // Set button to "Arrived"
+            // Show "Arrived"
             setFloorButtonStatus((prev) => ({
               ...prev,
               [target]: "Arrived",
             }));
 
-            // Mark elevator as waiting
             setTimeout(() => {
-              setElevators((current) =>
-                current.map((e) => {
-                  if (e.id !== elevator.id) return e;
-                  return {
-                    ...e,
-                    queue: e.queue.slice(1),
-                    isWaiting: false,
-                  };
-                })
-              );
-
-              // Reset floor button
               setFloorButtonStatus((prev) => ({
                 ...prev,
                 [target]: "Call",
@@ -101,23 +87,17 @@ const App: React.FC = () => {
 
             return {
               ...elevator,
-              currentFloor: target,
-              isWaiting: true,
+              currentFloor: nextFloor,
+              queue: elevator.queue.slice(1),
             };
           }
-
-          return {
-            ...elevator,
-            currentFloor: nextFloor,
-          };
-        });
-      });
-    }, 1000); // 1 second per floor
+          return { ...elevator, currentFloor: nextFloor };
+        })
+      );
+    }, 2000);
 
     return () => clearInterval(interval);
   }, []);
-
-
 
   return (
     <>
