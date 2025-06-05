@@ -1,0 +1,61 @@
+.elevator-system {
+    display: flex;
+    justify-content: center;
+}
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.building {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.floor {
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+.label {
+    width: 120px;
+    text-align: right;
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.elevator-row {
+    display: flex;
+    margin-right: 10px;
+}
+
+.shaft {
+    width:100px;
+    height: 50px;
+    border: 1px solid #ccc;
+    text-align: center;
+    line-height: 40px;
+}
+
+.elevator-icon {
+    border-radius: 4px;
+    font-size: 25px;
+}
+
+.call-button {
+    width: 100px;
+    height: 35px;
+    padding: 4px 10px;
+    border: none;
+    background-color: rgb(23, 243, 107);
+    color: black;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 10px;
+}
+
+.call-button:disabled {
+    background-color: red;
+    cursor: not-allowed;
+}
