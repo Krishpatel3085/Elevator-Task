@@ -1,61 +1,193 @@
-.elevator-system {
-    display: flex;
-    justify-content: center;
+:root {
+  --elevator-speed: 2s;
+  --floor-height: 60px;
+  --bg-color: #222;
+  --shaft-color: #333;
+  --metal-color: #d1d5db;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-orange: #f59e0b;
 }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-color);
+  color: white;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.app-container {
+  text-align: center;
+  padding: 40px;
+}
+
 h1 {
-    text-align: center;
-    margin-bottom: 20px;
-}
-.building {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  margin-bottom: 40px;
+  font-weight: 300;
+  letter-spacing: 2px;
 }
 
-.floor {
-    display: flex;
-    align-items: center;
-    margin: 0;
+/* --- Layout Grid --- */
+.building-grid {
+  display: flex;
+  gap: 20px;
+  background: #2a2a2a;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-.label {
-    width: 120px;
-    text-align: right;
-    margin-right: 10px;
-    font-weight: bold;
+/* --- Left Side: Controls --- */
+.floor-controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: calc(var(--floor-height) * 10); /* 10 Floors */
 }
 
-.elevator-row {
-    display: flex;
-    margin-right: 10px;
+.floor-label-row {
+  height: var(--floor-height);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: flex-end;
+}
+
+.floor-name {
+  font-size: 14px;
+  color: #888;
+  font-weight: bold;
+}
+
+.call-btn {
+  width: 80px;
+  height: 36px;
+  border: none;
+  border-radius: 4px;
+  background-color: #444;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.call-btn:hover:not(:disabled) {
+  background-color: #666;
+}
+
+.call-btn.waiting {
+  background-color: var(--accent-orange);
+  color: black;
+  animation: pulse 1s infinite;
+}
+
+.call-btn.arrived {
+  background-color: var(--accent-green);
+  color: white;
+}
+
+/* --- Right Side: Shafts --- */
+.shafts-container {
+  display: flex;
+  gap: 15px;
+  height: calc(var(--floor-height) * 10); /* Must match control height */
+  position: relative;
+  padding: 0 10px; /* Slight padding for aesthetics */
 }
 
 .shaft {
-    width:100px;
-    height: 50px;
-    border: 1px solid #ccc;
-    text-align: center;
-    line-height: 40px;
+  width: 60px;
+  height: 100%;
+  background-color: var(--shaft-color);
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden; /* Keeps elevator inside rounded corners */
+  border: 1px solid #444;
 }
 
-.elevator-icon {
-    border-radius: 4px;
-    font-size: 25px;
+/* The faint lines inside the shaft to show floors */
+.shaft-guide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.call-button {
-    width: 100px;
-    height: 35px;
-    padding: 4px 10px;
-    border: none;
-    background-color: rgb(23, 243, 107);
-    color: black;
-    font-weight: 700;
-    cursor: pointer;
-    border-radius: 10px;
+.shaft-floor-marker {
+  flex: 1; /* Distributes evenly */
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
-.call-button:disabled {
-    background-color: red;
-    cursor: not-allowed;
+/* --- The Elevator Car --- */
+
+.elevator-car {
+  position: absolute;
+  width: 100%;
+  
+  /* Height is exactly 1/10th (10%) of the shaft to fit the grid */
+  height: 10%; 
+  
+  left: 0;
+  background: linear-gradient(135deg, #271010 0%, #9ca3af 100%);
+  border-radius: 2px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  
+  /* Add a tiny border so it doesn't bleed into the line above */
+  box-sizing: border-box;
+  border-top: 1px solid rgba(255,255,255,0.4);
+  border-bottom: 1px solid rgba(0,0,0,0.4);
+}
+
+/* Doors visuals */
+.elevator-door-left, .elevator-door-right {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 48%;
+  background-color: #b0b0b0;
+  border: 1px solid #888;
+  transition: transform 0.5s ease;
+}
+
+.elevator-door-left { left: 1px; border-right: 1px solid #777; }
+.elevator-door-right { right: 1px; border-left: 1px solid #777; }
+
+/* Doors open when class is 'stopped' (which happens during wait time) */
+.stopped .elevator-door-left { transform: translateX(-80%); }
+.stopped .elevator-door-right { transform: translateX(80%); }
+
+/* Doors closed when class is 'moving' */
+.moving .elevator-door-left { transform: translateX(0); }
+.moving .elevator-door-right { transform: translateX(0); }
+
+/* Floor Number inside elevator */
+.car-number {
+  z-index: 20;
+  font-size: 15px;
+  color: var(--accent-red);
+  background: rgba(0,0,0,0.8);
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
 }
