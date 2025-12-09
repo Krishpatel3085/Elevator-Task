@@ -45,7 +45,7 @@ h1 {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: calc(var(--floor-height) * 10); /* 10 Floors */
+  height: calc(var(--floor-height) * 10); 
 }
 
 .floor-label-row {
