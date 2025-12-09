@@ -110,8 +110,6 @@ const App: React.FC = () => {
              };
           }
 
-          // 4. MOVE STEP: We are not at target yet. Move towards it.
-          // Note: We do NOT stop 'isMoving' here even if it is the last step.
           // This ensures the CSS transition completes fully.
           let step = 0;
           if (target > elevator.currentFloor) step = 1;
